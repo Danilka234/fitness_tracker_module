@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict, Union
 from dataclasses import dataclass
 
 
@@ -49,7 +49,8 @@ class Training:
 
     def get_spent_calories(self) -> float:
         """Получить количество затраченных калорий."""
-        raise NotImplementedError()
+        raise NotImplementedError(
+            'Переопределите get_spent_colories в всех дочерних классах')
 
     def show_training_info(self) -> InfoMessage:
         """Вернуть информационное сообщение о выполненной тренировке."""
@@ -98,11 +99,11 @@ class SportsWalking(Training):
                  action: int,
                  duration: float,
                  weight: float,
-                 height) -> None:
+                 height: float) -> None:
         super().__init__(action, duration, weight)
         self.height: float = height
 
-    """Возврат расчета колорий тренировки: спортивная ходьба."""
+    # Возврат расчета колорий тренировки: спортивная ходьба.
     def get_spent_calories(self) -> float:
         spent_colories_walking = (
             (self.COLORIES_COEF_WEIGHT * self.weight
@@ -149,20 +150,28 @@ class Swimming(Training):
         return spent_colories_swim
 
 
-def read_package(workout_type: str, data: List[int]) -> Training:
+def read_package(workout_type: str, data: List[int]) -> Union[Training, None]:
     """Прочитать данные полученные от датчиков."""
+    data_a_training: Dict[str, type[Training]] = {
+        'SWM': Swimming,
+        'RUN': Running,
+        'WLK': SportsWalking
+    }
+    try:
+        data_for_training = data_a_training[workout_type]
+        return data_for_training(*data)
+    except KeyError as e:
+        print(f"{e} The module doesn't support this type of training")
+        return None
 
-    data_a_training = {'SWM': Swimming,
-                       'RUN': Running,
-                       'WLK': SportsWalking}
 
-    return data_a_training[workout_type](*data)
-
-
-def main(training: Training) -> None:
+def main(training: Union[Training, None]) -> None:
     """Главная функция."""
-    info = training.show_training_info()
-    print(info.get_message())
+    if training:
+        info = training.show_training_info()
+        print(info.get_message())
+    else:
+        pass
 
 
 if __name__ == '__main__':
@@ -172,11 +181,7 @@ if __name__ == '__main__':
         ('WLK', [9000, 1, 75, 180])
     ]
 
-    """Передаем данные с датчиков для получения общей информации."""
+    # Передаем данные с датчиков для получения общей информации.
     for workout_type, data in packages:
-        try:
-            training = read_package(workout_type, data)
-        except Exception:
-            print("The module doesn't support this type of training")
-        else:
-            main(training)
+        training = read_package(workout_type, data)
+        main(training)
